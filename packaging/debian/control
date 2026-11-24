@@ -1,0 +1,10 @@
+Package: uu-tailscale-relay
+Version: @VERSION@
+Section: net
+Priority: optional
+Architecture: all
+Depends: nodejs (>= 22), tailscale (>= 1.104~), systemd, init-system-helpers
+Maintainer: Morpheus799 <92247184+Morpheus799@users.noreply.github.com>
+Description: UU TURN transport for Tailscale Peer Relay
+ Run a Tailscale peer relay with a NetEase UU TURN allocation as its
+ public endpoint. Configure accounts and manage the service with uurelay.

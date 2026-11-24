@@ -1,0 +1,109 @@
+name: Linux build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release
+      - run: npm run deb
+      - run: npm pack --pack-destination dist
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-release
+          path: |
+            dist/*.tar.gz
+            dist/*.tgz
+            dist/*.deb
+
+  release:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v7
+        with:
+          name: linux-release
+          path: dist
+      - name: Publish an untagged stable version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          stable_version='(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)'
+          if [[ ! "$version" =~ ^$stable_version$ ]]; then
+            echo "::notice::$version is not a stable version. Skipping publication."
+            exit 0
+          fi
+          tag="v$version"
+
+          tag_ref=$(git ls-remote --tags --refs origin "refs/tags/$tag")
+          if [[ -n "$tag_ref" ]]; then
+            echo "::notice::$tag already exists. Skipping publication."
+            exit 0
+          fi
+
+          node scripts/release-info.cjs --repo "$GITHUB_REPOSITORY" --check --output publish
+          packages=(
+            "dist/uu-tailscale-relay_${version}_all.deb"
+            "dist/uu-tailscale-relay-v${version}-linux.tar.gz"
+            "dist/uu-tailscale-relay-${version}.tgz"
+          )
+          for package in "${packages[@]}"; do
+            if [[ ! -s "$package" ]]; then
+              echo "::error::Missing release package: $package"
+              exit 1
+            fi
+          done
+
+          metadata=$(mktemp)
+          notes="$metadata.notes"
+          trap 'rm -f "$metadata" "$notes"' EXIT
+          jq -r '.log' publish/version.json > "$notes"
+          fields=tagName,isDraft,isPrerelease,databaseId,targetCommitish
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json "$fields" > "$metadata"; then
+            if ! jq -e --arg tag "$tag" '.isDraft == true and .isPrerelease == false and .tagName == $tag' "$metadata" >/dev/null; then
+              echo "::error::The existing Release is not a stable draft for $tag."
+              exit 1
+            fi
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "$tag" --notes-file "$notes"
+            gh release upload "$tag" "${packages[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" "${packages[@]}" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" --title "$tag" --notes-file "$notes"
+          fi
+
+          tag_ref=$(git ls-remote --tags --refs origin "refs/tags/$tag")
+          if [[ -n "$tag_ref" ]]; then
+            echo "::error::$tag was created while preparing the draft."
+            exit 1
+          fi
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json "$fields" > "$metadata"
+          release_id=$(jq -e --arg tag "$tag" --arg sha "$GITHUB_SHA" 'select(.isDraft == true and .isPrerelease == false and .tagName == $tag and .targetCommitish == $sha) | .databaseId | numbers' "$metadata")
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" -F draft=false -f "target_commitish=$GITHUB_SHA" -f make_latest=legacy --silent

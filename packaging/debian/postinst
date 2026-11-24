@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+if [ "$1" = configure ]; then
+  root=${DPKG_ROOT:-}
+  [ -d "$root/etc/uu-tailscale-relay" ] || install -d -m 0700 "$root/etc/uu-tailscale-relay"
+  [ -d "$root/var/lib/uu-tailscale-relay" ] || install -d -m 0700 "$root/var/lib/uu-tailscale-relay"
+  if [ -z "$root" ] && [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+  fi
+fi

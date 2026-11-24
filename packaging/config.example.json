@@ -1,0 +1,7 @@
+{
+  "relayPort": 48472,
+  "peers": [],
+  "permissionRefreshSeconds": 180,
+  "credentialRefreshSeconds": 7200,
+  "provider": {"type": "slot"}
+}

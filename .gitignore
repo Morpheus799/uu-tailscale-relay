@@ -1,0 +1,9 @@
+node_modules/
+dist/
+config.json
+controller.json
+turn.json
+*.key
+*.log
+.env*
+test/

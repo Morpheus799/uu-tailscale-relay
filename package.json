@@ -1,0 +1,31 @@
+{
+  "name": "uu-tailscale-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Use NetEase UU's TURN transport as a Tailscale Peer Relay endpoint on Linux",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Morpheus799",
+    "email": "92247184+Morpheus799@users.noreply.github.com"
+  },
+  "bin": { "uurelay": "dist/uurelay.cjs" },
+  "files": [
+    "dist/relay.cjs",
+    "dist/uurelay.cjs",
+    "dist/THIRD_PARTY_LICENSES.txt",
+    "packaging/install.sh",
+    "packaging/uninstall.sh",
+    "packaging/config.example.json",
+    "packaging/uu-tailscale-relay.service"
+  ],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "prepack": "npm run build",
+    "release": "npm run build && node scripts/release.cjs",
+    "release:info": "node scripts/release-info.cjs",
+    "deb": "npm run build && node scripts/deb.cjs"
+  },
+  "dependencies": { "jsonc-parser": "3.3.1", "werift": "0.27.0", "ws": "8.23.0" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}

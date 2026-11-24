@@ -1,0 +1,11 @@
+{
+  "version": "1.0.1",
+  "tag": "v1.0.1",
+  "log": "- 首个正式版。通过 UU TURN 为 Linux 上的 Tailscale 节点提供 Peer Relay，客户端继续使用原生 Tailscale。\n- 支持 UU 账号槽位、Tailscale OAuth、中文诊断和公网 IPv4 许可刷新。\n- 提供 .deb、npm 和 Linux 手动安装包。Linux 服务可选择启用自动升级。",
+  "download_url": "https://github.com/Morpheus799/uu-tailscale-relay/releases/download/v1.0.1/uu-tailscale-relay_1.0.1_all.deb",
+  "downloads": {
+    "deb": "https://github.com/Morpheus799/uu-tailscale-relay/releases/download/v1.0.1/uu-tailscale-relay_1.0.1_all.deb",
+    "tar": "https://github.com/Morpheus799/uu-tailscale-relay/releases/download/v1.0.1/uu-tailscale-relay-v1.0.1-linux.tar.gz",
+    "npm": "https://github.com/Morpheus799/uu-tailscale-relay/releases/download/v1.0.1/uu-tailscale-relay-1.0.1.tgz"
+  }
+}
